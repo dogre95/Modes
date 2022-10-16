@@ -4,7 +4,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2021-10-29"
+#Const Version						"2022-09-14"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -723,8 +723,8 @@ if (Match_MapIsValid) {
 	Royal::UpdateRanking();
 	StateMgr::ForcePlayersStates([StateMgr::C_State_Waiting]);
 	
-	//L16N [Royal] The current map is not valid, it will be skipped.
-	UIManager.UIAll.QueueMessage(3000, 1, CUIConfig::EMessageDisplay::Big, _("This map is not valid"));
+	//L16N [Royal] The current track is not valid, it will be skipped.
+	UIManager.UIAll.QueueMessage(3000, 1, CUIConfig::EMessageDisplay::Big, _("This track is not valid"));
 	MB_Sleep(3000);
 	MB_StopMap();
 }
@@ -971,6 +971,27 @@ UIModules_MatchResult::ResetClickedOnStay();
 StateMgr::ForcePlayersStates([StateMgr::C_State_WinScreen]);
 MB_Sleep(WinScreen_Common::C_WinScreenDuration + 500);
 
+UIManager.UIAll.UISequence_PodiumPlayersWin = "";
+declare Integer WinningTeamId = Scores::GetClanWinner();
+if (WinningTeamId != Royal::C_TeamNullId) {
+	declare Integer[CSmScore] PodiumScores;
+	foreach (Score in Scores) {
+		if (Score.User != Null) {
+			if (Royal::GetTeamId(Score.User.WebServicesUserId) == WinningTeamId) {
+				PodiumScores[Score] = Scores::GetPlayerMapPoints(Score);
+			}
+		}
+	}
+	PodiumScores = PodiumScores.sortreverse();
+	foreach (Score => Points in PodiumScores) {
+		if (UIManager.UIAll.UISequence_PodiumPlayersWin == "") {
+			UIManager.UIAll.UISequence_PodiumPlayersWin ^= Score.User.Login;
+		} else {
+			UIManager.UIAll.UISequence_PodiumPlayersWin ^= ","^Score.User.Login;
+		}
+	}
+}
+
 StateMgr::ForcePlayersStates([StateMgr::C_State_Podium]);
 ModeUtils::PushAndApplyUISequence(UIManager.UIAll, CUIConfig::EUISequence::Podium);
 declare Integer ChatTimeSetting = S_ChatTime;
@@ -995,6 +1016,7 @@ while (Now < ChatEndTime) {
 		}
 	}
 }
+UIManager.UIAll.UISequence_PodiumPlayersWin = "";
 ModeUtils::PopAndApplyUISequence(UIManager.UIAll);
 
 StateMgr::ForcePlayersStates([StateMgr::C_State_Waiting]);
