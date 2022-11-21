@@ -1,0 +1,688 @@
+/**
+ *	UI module: ScoresTable client side
+ */
+#Const Version		"2022-08-05"
+#Const ScriptName	"ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/ScoresTable_Client.Script.txt"
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// Libraries
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+#Include "ColorLib" as CL
+#Include "Libs/Nadeo/CommonLibs/Common/Task.Script.txt" as Task
+#Include "Libs/Nadeo/MenuLibs/Common/Manialink/ManiaView2.Script.txt" as MV
+#Include "Libs/Nadeo/MenuLibs/Common/FontManager.Script.txt" as FontManager
+#Include "Libs/Nadeo/MenuLibs/Common/Components/Grid.Script.txt" as Grid
+#Include "Libs/Nadeo/MenuLibs/Common/Manialink/Helpers.Script.txt" as MLHelpers
+#Include "Libs/Nadeo/MenuLibs/Common/Components/Tools.Script.txt" as Tools
+#Include "Libs/Nadeo/ModeLibs/TrackMania/MV_Utils.Script.txt" as MV_Utils
+#Include "Libs/Nadeo/ModeLibs/Common/Clans_Client.Script.txt" as Clans
+#Include "Libs/Nadeo/ModeLibs/Common/UIModules_Client.Script.txt" as UIModules
+#Include "Libs/Nadeo/TMNext/TrackMania/ColorPalette.Script.txt" as ColorPalette
+#Include "Libs/Nadeo/TMNext/TrackMania/Stores/UserStore.Script.txt" as UserStore
+#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/ScoresTable_Common.Script.txt" as UIModules_ScoresTable_Common
+#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/Ranking_Client.Script.txt" as Ranking
+#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/Spectator_Client.Script.txt" as Spectator
+#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/ScoresTable_Client.Script.txt" as ScoresTableDefault
+#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/SuperRoyal_Client.Script.txt" as SuperRoyal
+#Include "Libs/Nadeo/TMNext/TrackMania/Menu/Constants.Script.txt" as MenuConst
+#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/ScoresTable_Visibility_Component.Script.txt" as ScoresTableVisibility
+#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/PauseMenuOnline_Client.Script.txt" as PauseMenu_Online
+#Include "Libs/Nadeo/MenuLibs/Common/Menu/Components/MenuButtonList.Script.txt" as MenuButtonList
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// Constants
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+#Const C_Img_Header "file://Media/Manialinks/Nadeo/TMNext/Modes/Champion/hud_champion_scoretable_header.dds"
+#Const C_Img_Body "file://Media/Manialinks/Nadeo/TMNext/Modes/Champion/hud_champion_scoretable_body.dds"
+#Const C_Img_TeamLogoBg "file://Media/Manialinks/Nadeo/TMNext/Modes/Royal/hud_royal_scoretable_team_icon_bg.dds"
+#Const C_Img_TeamNameBg "file://Media/Manialinks/Nadeo/TMNext/Modes/Royal/hud_royal_scoretable_team_name_bg.dds"
+#Const C_Img_TeamPointsBg "file://Media/Manialinks/Nadeo/TMNext/Modes/Race/HUD_scoretable_square_round_points.dds"
+#Const C_ZIndex_ScoresTable 70 //< Must be at least 65 to be above the chat z-index
+#Const C_ColsNb 2
+#Const C_RowsNb 10
+#Const C_UpdateInterval 100 //< Time interval between two updates check in the scores table
+
+#Const C_Column_Rank 0
+#Const C_Column_Logo 1
+#Const C_Column_Name 2
+#Const C_Column_Points 3
+#Const C_Column_Time 4
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// Functions
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// Public
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/// Get the id of the UI module
+Text GetId() {
+	return UIModules_ScoresTable_Common::C_Id;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/// Get the type of layer of the UI module
+CUILayer::EUILayerType GetLayerType() {
+	return UIModules_ScoresTable_Common::C_LayerType;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/** Get the module manialink
+ *
+ *  @return                           The module manialink
+ */
+Text GetML() {
+	//L16N [ScoresTable Royal] Display the nickname of the user who created the track being played. %1 will be replaced by the user nickname. eg: "By Alex".
+	declare Text Text_AuthorName = _("By %1");
+	//L16N [ScoresTable Royal] Display the number of teams.
+	declare Text Text_ZeroTeams = _("0 teams");
+	//L16N [ScoresTable Royal] Display the number of teams.
+	declare Text Text_OneTeam = _("1 team");
+	//L16N [ScoresTable Royal] Display the number of teams. %1 will be replaced by the number of teams, always greater than 1. eg: "20 teams".
+	declare Text Text_MultipleTeams = _("%1 teams");
+	//L16N [ScoresTable Royal] Display the number of tracks played in the match. %1 will be replaced by the number of the track currently played. %2 will be replaced by the total number of tracks that will be played. eg: "Track 3/5" meaning that we are playing the third track on the five that will be played.
+	declare Text Text_MapsProgressionFull = _("Track %1/%2");
+	//L16N [ScoresTable Royal] Display the number of tracks played in the match. %1 will be replaced by the number of the track currently played. eg: "Track 3" meaning that we are playing the third track.
+	declare Text Text_MapsProgressionPart = _("Track %1");
+	//L16N [ScoresTable Royal] Display the qualification phase number of the Super Royal competition, %1 will be replaced by a number. e.g "Qualification phase 2"
+	declare Text Text_QualifNumber =  _("Qualification phase %1");
+	//L16N [ScoresTable Royal] Last phase of the Super Royal competition
+	declare Text Text_Finale =  _("Finale");
+
+	declare Text Img_KOStamp = "file://Media/Manialinks/Nadeo/TMNext/Modes/Royal/hud_royal_ingame_KOSign.dds";
+
+	declare Real ImageRatio = 2112. / 3264.;
+	declare Real SkewAngle = 10.;
+	declare Vec2 Size_ScoresTableBg = <272., 0.>;
+	Size_ScoresTableBg.Y = Size_ScoresTableBg.X * ImageRatio;
+	declare Vec2 Pos_Header = <Size_ScoresTableBg.X * -0.34, Size_ScoresTableBg.Y * 0.415>;
+	declare Vec2 Size_HeaderLineLeft = <Size_ScoresTableBg.X * 0.52, 10.>;
+	declare Vec2 Size_HeaderLineRight = <Size_ScoresTableBg.X * 0.26, 10.>;
+	declare Vec2 Pos_HeaderRight = <Size_HeaderLineLeft.X + 5. + Size_HeaderLineRight.X, 0.>;
+	declare Vec2 Pos_Teams = <Size_ScoresTableBg.X * -0.402, Size_ScoresTableBg.Y * 0.182>;
+	declare Vec2 Size_TeamBlock = <122., 8.65>;
+	declare Vec2 Size_Team = <110., 8.9>;
+	declare Vec2 Size_TeamLogoBg = <Size_Team.Y * (188. / 108.), Size_Team.Y>;
+	declare Vec2 Size_TeamNameBg = <Size_Team.Y * (668. / 108.), Size_Team.Y>;
+	declare Vec2 Size_TeamPointsBg = <(Size_Team.Y - 1.) * (128. / 80.), Size_Team.Y - 1.>; //< This one does not have a margin around it
+	declare Vec2 Pos_MyTeam = <Size_ScoresTableBg.X * -0.227, Size_ScoresTableBg.Y * -0.37>;
+	declare Real SizeX_ClipboardMessage = 65.;
+	declare Real TextSize_ClipboardMessage = 2.;
+	declare Real TextSize_MapName = 5.2;
+	declare Real TextSize_MapAuthor = 2.8;
+	declare Real TextSize_Message = 4.8;
+
+	declare GridConfig = Grid::Create(Size_Team.X, 0., 2., Grid::C_Direction_Right);
+	GridConfig = Grid::AddColumn(GridConfig, C_Column_Rank, 6.8, Grid::C_Align_Center);
+	GridConfig = Grid::AddColumn(GridConfig, C_Column_Logo, 12.5, Grid::C_Align_Center);
+	GridConfig = Grid::AddColumn(GridConfig, C_Column_Name, 50.7, Grid::C_Align_Left);
+	GridConfig = Grid::AddColumn(GridConfig, C_Column_Points, 10., Grid::C_Align_Center);
+	GridConfig = Grid::AddColumn(GridConfig, C_Column_Time, 20., Grid::C_Align_Right);
+	declare Grid = Grid::Compile(GridConfig);
+	declare Real SizeX_TeamNameMargin = 3.;
+	declare Real TextSize_TeamName = 3.;
+
+	declare Text ML_Teams = "";
+	for (Col, 0, C_ColsNb - 1) {
+		declare Real PosX = Col * Size_TeamBlock.X;
+		for (Row, 0, C_RowsNb - 1) {
+			declare Real PosY = -Row * Size_TeamBlock.Y;
+			ML_Teams ^= """<frameinstance modelid="framemodel-team" pos="{{{MLHelpers::SkewX(PosX, PosY, SkewAngle)}}} {{{PosY}}}" hidden="1" />""";
+		}
+	}
+
+	declare Text Id = GetId();
+	return MV::Create(
+Id, 3,
+"""
+<stylesheet>
+	<style class="text-bold" textcolor="ffffff" textfont="{{{FontManager::C_GameFontExtraBold}}}" textprefix="$t$i" />
+	<style class="text-semibold" textcolor="ffffff" textfont="{{{FontManager::C_GameFontSemiBold}}}" textprefix="$t$i" />
+	<style class="text-regular" textcolor="ffffff" textfont="{{{FontManager::C_GameFontRegular}}}" textprefix="$t$i" />
+</stylesheet>
+
+<framemodel id="framemodel-team">
+	<quad id="button-spec-team" {{{MLHelpers::Size(Size_Team)}}} valign="center" opacity="0" scriptevents="1" />
+	<frame z-index="-1">
+		<quad id="quad-logo-bg" pos="{{{Size_Team.X * 0.069}}} 0" {{{MLHelpers::Size(Size_TeamLogoBg)}}} valign="center" colorize="{{{ColorPalette::C_Color_DarkBlue}}}" opacity="0.5" image="{{{C_Img_TeamLogoBg}}}" />
+		<quad id="quad-name-bg" pos="{{{Size_Team.X * 0.202}}} 0" {{{MLHelpers::Size(Size_TeamNameBg)}}} valign="center" colorize="{{{ColorPalette::C_Color_DarkBlue}}}" opacity="0.5" image="{{{C_Img_TeamNameBg}}}" />
+		<quad id="quad-points-bg" pos="{{{Size_Team.X * 0.695}}} 0" {{{MLHelpers::Size(Size_TeamPointsBg)}}} valign="center" colorize="{{{ColorPalette::C_Color_DarkBlue}}}" opacity="0.5" image="{{{C_Img_TeamPointsBg}}}" />
+	</frame>
+	<label id="label-rank" class="text-bold" pos="{{{Grid.Pos[C_Column_Rank]}}} 0" size="{{{Grid.Size[C_Column_Rank]}}} {{{Size_Team.Y}}}" halign="center" valign="center2" textsize="4" />
+	<quad id="quad-logo" pos="{{{Grid.Pos[C_Column_Logo]}}} 0" size="{{{Grid.Size[C_Column_Logo] - 1.}}} {{{Size_Team.Y - 2.}}}" halign="center" valign="center" keepratio="fit" />
+	<label id="label-name" class="text-bold" pos="{{{Grid.Pos[C_Column_Name] + SizeX_TeamNameMargin}}} 0" size="{{{Grid.Size[C_Column_Name] - (SizeX_TeamNameMargin * 2)}}} {{{Size_Team.Y}}}" halign="left" valign="center2" textsize="{{{TextSize_TeamName}}}" />
+	<label id="label-points" class="text-bold" pos="{{{Grid.Pos[C_Column_Points]}}} 0" size="{{{Grid.Size[C_Column_Points]}}} {{{Size_Team.Y}}}" halign="center" valign="center2" textsize="3" />
+	<label id="label-time" class="text-semibold" pos="{{{Grid.Pos[C_Column_Time]}}} 0" z-index="1" size="{{{Grid.Size[C_Column_Time]}}} {{{Size_Team.Y}}}" halign="right" valign="center2" textsize="2" />
+	<quad id="quad-eliminated" pos="{{{Grid.Pos[C_Column_Time]}}} 0" z-index="0" size="{{{Grid.Size[C_Column_Time]}}} {{{Size_Team.Y}}}" halign="right" valign="center2" keepratio="fit" colorize="{{{ColorPalette::C_Color_DarkBlue}}}" image="{{{Img_KOStamp}}}" />
+</framemodel>
+
+<frame id="frame-scorestable-layer" z-index="{{{C_ZIndex_ScoresTable}}}" hidden="1">
+	<frame id="frame-global" hidden="1">
+		<quad id="quad-black-bg" bgcolor="000" size="320 180" fullscreen="1" halign="center" valign="center" z-index="-3" opacity=".6"/>
+		<frameinstance modelid="{{{MenuButtonList::C_Name}}}" id="frame-button-list-scorestable-royal" z-index="1" />
+		<frame {{{UIModules::CustomizableUIModule(UIModules_ScoresTable_Common::C_UIModuleConfig)}}}>
+			<frame pos="1.5 0" z-index="0">
+				<quad {{{MLHelpers::Size(Size_ScoresTableBg)}}} halign="center" valign="center" image="{{{C_Img_Header}}}" />
+				<quad {{{MLHelpers::Size(Size_ScoresTableBg)}}} halign="center" valign="center" image="{{{C_Img_Body}}}" opacity="0.9" />
+			</frame>
+			<frame {{{MLHelpers::Pos(Pos_Header)}}} z-index="1">
+				<label id="label-map-name" class="text-bold" {{{MLHelpers::Size(Size_HeaderLineLeft)}}} textsize="{{{TextSize_MapName}}}" />
+				<label id="label-map-author" class="text-regular" {{{MLHelpers::Pos(<MLHelpers::SkewX(-7., SkewAngle), -7.>)}}} {{{MLHelpers::Size(Size_HeaderLineLeft)}}} textsize="{{{TextSize_MapAuthor}}}" />
+				<label id="label-teams-nb" class="text-bold" halign="left" {{{MLHelpers::Pos(<MLHelpers::SkewX(-18.5, SkewAngle), -18.5>)}}} {{{MLHelpers::Size(Size_HeaderLineLeft)}}} textsize="3.3" textcolor="{{{ColorPalette::C_Color_GreenOne}}}" />
+				<quad id="quad-super-royal-logo" pos="105 -9" size="30 30" halign="center" valign="center2"/>
+				<label id="label-super-royal-match" class="text-bold" halign="left" {{{MLHelpers::Pos(<MLHelpers::SkewX(-18.5, SkewAngle), -18.5>)}}} size="70 10" textsize="3.3" />
+				<label id="label-super-royal-division" class="text-regular" halign="left" pos="50 -18.5" size="50 10" textsize="3.3" textcolor="{{{ColorPalette::C_Color_GreenOne}}}" />
+				<frame {{{MLHelpers::Pos(Pos_HeaderRight)}}}>
+					<label id="label-message" class="text-bold" {{{MLHelpers::Size(Size_HeaderLineRight)}}} halign="right" textsize="{{{TextSize_Message}}}" />
+					<label id="label-maps-progression" class="text-semibold" {{{MLHelpers::Pos(<MLHelpers::SkewX(-18., SkewAngle), -18.>)}}} {{{MLHelpers::Size(Size_HeaderLineRight)}}} halign="right" textcolor="{{{ColorPalette::C_Color_GreenOne}}}" textsize="2.6" />
+				</frame>
+			</frame>
+			<frame id="frame-teams" {{{MLHelpers::Pos(Pos_Teams)}}} z-index="2">
+				{{{ML_Teams}}}
+			</frame>
+			<frameinstance id="frame-my-team" modelid="framemodel-team" {{{MLHelpers::Pos(Pos_MyTeam)}}} z-index="3" />
+			<label id="label-clipboard" z-index="2" size="{{{SizeX_ClipboardMessage}}} 5" pos="134 78" class="text-semibold" halign="right" valign="center2" textsize="{{{TextSize_ClipboardMessage}}}" focusareacolor1="00000000" focusareacolor2="00000030" scriptevents="1" />
+		</frame>
+	</frame>
+</frame>
+""",
+"""
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "ColorLib" as CL
+
+#Struct K_Controls {
+	CMlFrame Frame_Teams;
+	CMlFrame Frame_MyTeam;
+	CMlLabel Label_Clipboard;
+	CMlLabel Label_MapName;
+	CMlLabel Label_MapAuthor;
+	CMlLabel Label_TeamsNb;
+	CMlLabel Label_SuperRoyal_Match;
+	CMlLabel Label_Message;
+	CMlLabel Label_MapsProgression;
+	CMlQuad Quad_SuperRoyal_Logo;
+	CMlLabel Label_SuperRoyal_Division;
+}
+
+#Struct K_State {
+	K_Controls Controls;
+	Integer TeamsRankingUpdate;
+	{{{Task::P}}}K_Task TaskRetrieveDisplayName;
+	Text CurrentMapUid;
+	Text HeaderMessage;
+	Int2 MapsProgression;
+	Text ClipboardDisplayedMessage;
+	Text ClipboardValue;
+	Ident TargetPlayerId;
+	Integer TargetPlayerClan;
+}
+
+#Const C_Color_GreenOne {{{dump(CL::Hex6ToRgb(ColorPalette::C_Color_GreenOne))}}}
+#Const C_Color_GreenTwo {{{dump(CL::Hex6ToRgb(ColorPalette::C_Color_GreenTwo))}}}
+
+#Const C_UpdateInterval {{{dump(C_UpdateInterval)}}}
+#Const C_SizeX_ClipboardMessage {{{dump(SizeX_ClipboardMessage)}}}
+#Const C_TextSize_ClipboardMessage {{{dump(TextSize_ClipboardMessage)}}}
+#Const C_TextSize_TeamName {{{dump(TextSize_TeamName)}}}
+#Const C_TextSize_MapName {{{dump(TextSize_MapName)}}}
+#Const C_TextSize_MapAuthor {{{dump(TextSize_MapAuthor)}}}
+#Const C_TextSize_Message {{{dump(TextSize_Message)}}}
+#Const C_Id {{{dump(Id)}}}
+#Const C_SuperRoyal_Logos {{{dump(MenuConst::C_SuperRoyal_Logos)}}}
+#Const C_SuperRoyal_DivisionNames {{{dump(MenuConst::C_SuperRoyal_DivisionNames)}}}
+#Const C_SuperRoyal_DivisionColors {{{dump(MenuConst::C_SuperRoyal_DivisionColors)}}}
+""",
+"""
+Void FocusTeam(CMlFrame _Frame_Team, Integer _TargetPlayerClan, Integer _TeamScore_TeamId, Boolean _IsFocused) {
+	declare CMlQuad Quad_LogoBg <=> (_Frame_Team.GetFirstChild("quad-logo-bg") as CMlQuad);
+	declare CMlQuad Quad_NameBg <=> (_Frame_Team.GetFirstChild("quad-name-bg") as CMlQuad);
+	declare CMlQuad Quad_PointsBg <=> (_Frame_Team.GetFirstChild("quad-points-bg") as CMlQuad);
+	declare CMlLabel Label_Name <=> (_Frame_Team.GetFirstChild("label-name") as CMlLabel);
+	declare CMlLabel Label_Points <=> (_Frame_Team.GetFirstChild("label-points") as CMlLabel);
+
+	if (_IsFocused) {
+		Quad_LogoBg.Opacity = 1.;
+		Quad_NameBg.Opacity = 1.;
+		Quad_PointsBg.Opacity = 1.;
+		Label_Name.Opacity = 1.;
+		if (_TargetPlayerClan == _TeamScore_TeamId) {
+			Label_Name.TextColor = C_Color_GreenOne;
+			Label_Points.TextColor = C_Color_GreenOne;
+		} else {
+			Label_Points.TextColor = C_Color_GreenTwo;
+			Label_Name.TextColor = {{{Clans::P}}}GetClanForegroundColor(_TeamScore_TeamId);
+		}
+	} else if (_TargetPlayerClan != _TeamScore_TeamId) {
+		Quad_LogoBg.Opacity = 0.5;
+		Quad_NameBg.Opacity = 0.5;
+		Quad_PointsBg.Opacity = 0.5;
+		Label_Name.Opacity = 0.8;
+		Label_Points.TextColor = <1., 1., 1.>;
+		Label_Name.TextColor = {{{Clans::P}}}GetClanForegroundColor(_TeamScore_TeamId);
+	}
+}
+
+Void UpdateTeamRank(CMlFrame _Frame_Team, {{{Ranking::P}}}K_TeamRank _TeamRank, CSmPlayer _TargetPlayer) {
+	declare CMlQuad Button_SpecTeam <=> (_Frame_Team.GetFirstChild("button-spec-team") as CMlQuad);
+	declare CMlLabel Label_Rank <=> (_Frame_Team.GetFirstChild("label-rank") as CMlLabel);
+	declare CMlQuad Quad_Logo <=> (_Frame_Team.GetFirstChild("quad-logo") as CMlQuad);
+	declare CMlLabel Label_Name <=> (_Frame_Team.GetFirstChild("label-name") as CMlLabel);
+	declare CMlLabel Label_Points <=> (_Frame_Team.GetFirstChild("label-points") as CMlLabel);
+	declare CMlLabel Label_Time <=> (_Frame_Team.GetFirstChild("label-time") as CMlLabel);
+	declare CMlQuad Quad_LogoBg <=> (_Frame_Team.GetFirstChild("quad-logo-bg") as CMlQuad);
+	declare CMlQuad Quad_NameBg <=> (_Frame_Team.GetFirstChild("quad-name-bg") as CMlQuad);
+	declare CMlQuad Quad_PointsBg <=> (_Frame_Team.GetFirstChild("quad-points-bg") as CMlQuad);
+	declare CMlQuad Quad_Eliminated <=> (_Frame_Team.GetFirstChild("quad-eliminated") as CMlQuad);
+
+	declare Integer TeamScore_TeamId for Button_SpecTeam = 0;
+	TeamScore_TeamId = _TeamRank.TeamId;
+	
+	if (_TargetPlayer != Null) {
+		FocusTeam(_Frame_Team, _TargetPlayer.CurrentClan, TeamScore_TeamId, _TargetPlayer.CurrentClan == _TeamRank.TeamId);
+	} else {
+		FocusTeam(_Frame_Team, 0, TeamScore_TeamId, False);
+	}
+
+	if (_TeamRank.Rank > 0) {
+		Label_Rank.Value = ""^_TeamRank.Rank;
+	} else {
+		Label_Rank.Value = "";
+	}
+	Quad_Logo.ImageUrl = {{{Clans::P}}}GetClanLogo(_TeamRank.TeamId);
+	Quad_Logo.Visible = Quad_Logo.ImageUrl != "";
+	Quad_NameBg.Colorize = {{{Clans::P}}}GetClanColor(_TeamRank.TeamId);
+	Label_Name.Value = {{{Clans::P}}}GetClanName(_TeamRank.TeamId, False);
+	{{{Tools::P}}}FitLabelValue(Label_Name, C_TextSize_TeamName, 2., 0.25);
+	Label_Points.Value = ""^_TeamRank.Points;
+	Label_Time.Visible = !_TeamRank.Eliminated;
+	if (Label_Time.Visible) {
+		if (_TeamRank.Time >= 0) {
+			Label_Time.Value = TL::TimeToText(_TeamRank.Time, True, True);
+		} else {
+			Label_Time.Value = "--:--.---";
+		}
+	}
+	Quad_Eliminated.Visible = _TeamRank.Eliminated;
+}
+
+K_State UpdateTeamsRanking(K_State _State, Integer _TeamsRankingUpdate, Integer[][] _TeamsRanking, CSmPlayer _TargetPlayer) {
+	declare K_State State = _State;
+	State.TeamsRankingUpdate = _TeamsRankingUpdate;
+
+	if (_TargetPlayer == Null) {
+		State.TargetPlayerClan = -1;
+	} else {
+		State.TargetPlayerClan = _TargetPlayer.CurrentClan;
+	}
+	
+	if (_TeamsRanking.count <= 0) {
+		State.Controls.Label_TeamsNb.Value = "{{{Text_ZeroTeams}}}";
+	} else if (_TeamsRanking.count == 1) {
+		State.Controls.Label_TeamsNb.Value = "{{{Text_OneTeam}}}";
+	} else {
+		State.Controls.Label_TeamsNb.Value = TL::Compose("{{{Text_MultipleTeams}}}", ""^_TeamsRanking.count);
+	}
+
+	foreach (Key => Control in State.Controls.Frame_Teams.Controls) {
+		if (_TeamsRanking.existskey(Key)) {
+			UpdateTeamRank((Control as CMlFrame), {{{Ranking::P}}}GetTeamRank(_TeamsRanking[Key], Key + 1), _TargetPlayer);
+			Control.Visible = True;
+		} else {
+			Control.Visible = False;
+		}
+	}
+
+	return State;
+}
+
+Void UpdateMyTeam(K_State _State, CSmPlayer _TargetPlayer, Integer[][] _TeamsRanking) {
+	if (_TargetPlayer == Null) {
+		_State.Controls.Frame_MyTeam.Visible = False;
+	} else {
+		declare {{{Ranking::P}}}K_TeamRank MyTeamRank = {{{Ranking::P}}}C_TeamRankNull;
+		MyTeamRank.TeamId = _TargetPlayer.CurrentClan;
+		foreach (Key => TeamRank in _TeamsRanking) {
+			if ({{{Ranking::P}}}IsTeamIdRank(_TargetPlayer.CurrentClan, TeamRank)) {
+				MyTeamRank = {{{Ranking::P}}}GetTeamRank(TeamRank, Key + 1);
+				break;
+			}
+		}
+		if (MyTeamRank.TeamId > 0) {
+			UpdateTeamRank(_State.Controls.Frame_MyTeam, MyTeamRank, _TargetPlayer);
+			_State.Controls.Frame_MyTeam.Visible = True;
+		} else {
+			_State.Controls.Frame_MyTeam.Visible = False;
+		}
+	}
+}
+
+K_State SetClipboardMessage(K_State _State, Text _DisplayedMessage, Text _ClipboardValue) {
+	declare K_State State = _State;
+	State.ClipboardDisplayedMessage = _DisplayedMessage;
+	State.ClipboardValue = _ClipboardValue;
+
+	if (State.ClipboardDisplayedMessage == "") {
+		State.Controls.Label_Clipboard.Visible = False;
+	} else {
+		State.Controls.Label_Clipboard.Value = State.ClipboardDisplayedMessage;
+		State.Controls.Label_Clipboard.Size.X = ML::Min(
+			C_SizeX_ClipboardMessage,
+			State.Controls.Label_Clipboard.ComputeWidth(State.Controls.Label_Clipboard.Value, True)
+		);
+		if (State.ClipboardValue == "") {
+			State.Controls.Label_Clipboard.ScriptEvents_Disable();
+		} else {
+			State.Controls.Label_Clipboard.ScriptEvents_Restore();
+		}
+		State.Controls.Label_Clipboard.Visible = True;
+	}
+	
+	return State;
+}
+
+Void CopyToClipboard(CMlLabel _Label_Clipboard, Text _ClipboardValue) {
+	if (System != Null && _ClipboardValue != "") {
+		AnimMgr.Flush(_Label_Clipboard);
+		_Label_Clipboard.TextColor = <1., 1., 1.>;
+		AnimMgr.Add(_Label_Clipboard, "<a textcolor=\"{{{ColorPalette::C_Color_GreenOne}}}\" />", 125, CAnimManager::EAnimManagerEasing::QuadIn);
+		AnimMgr.AddChain(_Label_Clipboard, "<a textcolor=\"ffffff\" />", 250, CAnimManager::EAnimManagerEasing::QuadOut);
+		System.ClipboardSet(_ClipboardValue);
+	}
+}
+
+K_State SetMap(K_State _State, CMap _Map, Boolean _CanRetrieveDisplayName) {
+	declare K_State State = _State;
+
+	if (_Map == Null) {
+		State.CurrentMapUid = "";
+		State.Controls.Label_MapName.Visible = False;
+		State.Controls.Label_MapAuthor.Visible = False;
+	} else {
+		State.CurrentMapUid = _Map.MapInfo.MapUid;
+
+		declare Text AuthorNickname = "";
+		if (UserMgr != Null && _Map.AuthorLogin != "") {
+			declare Text DisplayName = {{{UserStore::P}}}GetUserMgrPlayerName(_Map.AuthorLogin);
+			if (_CanRetrieveDisplayName && DisplayName == "") {
+				State.TaskRetrieveDisplayName = {{{Task::P}}}DestroyAndCreate(
+					State.TaskRetrieveDisplayName,
+					UserMgr,
+					UserMgr.RetrieveDisplayName({{{UserStore::P}}}GetMainUserId(), [_Map.AuthorLogin])
+				);
+			} else if (DisplayName != "") {
+				AuthorNickname = DisplayName;
+			} else {
+				AuthorNickname = _Map.AuthorNickName;
+			}
+		} else {
+			AuthorNickname = _Map.AuthorNickName;
+		}
+
+		State.Controls.Label_MapName.Visible = True;
+		State.Controls.Label_MapName.Value = _Map.MapName;
+		{{{Tools::P}}}FitLabelValue(State.Controls.Label_MapName, C_TextSize_MapName, 2., 0.5);
+
+		State.Controls.Label_MapAuthor.Visible = (AuthorNickname != "");
+		if (State.Controls.Label_MapName.Visible) {
+			State.Controls.Label_MapAuthor.Value = TL::Compose("{{{Text_AuthorName}}}", "$<"^AuthorNickname^"$>");
+			{{{Tools::P}}}FitLabelValue(State.Controls.Label_MapAuthor, C_TextSize_MapAuthor, 2., 0.25);
+		}
+	}
+
+	return State;
+}
+
+K_State SetHeaderMessage(K_State _State, Text _Message) {
+	declare K_State State = _State;
+	State.HeaderMessage = _Message;
+	if (State.HeaderMessage != "") {
+		State.Controls.Label_Message.Visible = True;
+		State.Controls.Label_Message.Value = State.HeaderMessage;
+		{{{Tools::P}}}FitLabelValue(State.Controls.Label_Message, C_TextSize_Message, 2., 0.5);
+	} else {
+		State.Controls.Label_Message.Visible = False;
+	}
+	return State;
+}
+
+K_State SetMapsProgression(K_State _State, Int2 _MapsProgression) {
+	declare K_State State = _State;
+	State.MapsProgression = _MapsProgression;
+	if (_MapsProgression.X > 0) {
+		if (_MapsProgression.Y > 0) {
+			State.Controls.Label_MapsProgression.Value = TL::Compose("{{{Text_MapsProgressionFull}}}", ""^_MapsProgression.X, ""^_MapsProgression.Y);
+		} else {
+			State.Controls.Label_MapsProgression.Value = TL::Compose("{{{Text_MapsProgressionPart}}}", ""^_MapsProgression.X);
+		}
+		State.Controls.Label_MapsProgression.Visible = True;
+	} else {
+		State.Controls.Label_MapsProgression.Visible = False;
+	}
+	return State;
+}
+
+Void UpdateSuperRoyalMatch(K_State _State, Boolean _IsSuperRoyalEnabled, Integer _QualifNumber, Boolean _IsSuperRoyalFinale, Text _Division) {
+	_State.Controls.Label_TeamsNb.Visible = !_IsSuperRoyalEnabled;
+	_State.Controls.Quad_SuperRoyal_Logo.Visible = _IsSuperRoyalEnabled;
+	_State.Controls.Label_SuperRoyal_Match.Visible = _IsSuperRoyalEnabled;
+	_State.Controls.Label_SuperRoyal_Division.Visible = _IsSuperRoyalEnabled;
+	if (_IsSuperRoyalEnabled) {
+		if (_IsSuperRoyalFinale) _State.Controls.Label_SuperRoyal_Match.Value = "{{{Text_Finale}}}";
+		else _State.Controls.Label_SuperRoyal_Match.Value = TL::Compose("{{{Text_QualifNumber}}}", ""^_QualifNumber);
+		_State.Controls.Quad_SuperRoyal_Logo.ImageUrl = C_SuperRoyal_Logos.get(_Division, "");
+		_State.Controls.Label_SuperRoyal_Division.Value = C_SuperRoyal_DivisionNames.get(_Division, "");
+		if (C_SuperRoyal_DivisionColors.existskey(_Division)) _State.Controls.Label_SuperRoyal_Division.TextColor = CL::Hex6ToRgb(C_SuperRoyal_DivisionColors[_Division]);
+		declare Real MatchNameWidth = ML::Min(_State.Controls.Label_SuperRoyal_Match.ComputeWidth(_State.Controls.Label_SuperRoyal_Match.Value), _State.Controls.Label_SuperRoyal_Match.Size.X);
+		_State.Controls.Label_SuperRoyal_Division.RelativePosition_V3.X = _State.Controls.Label_SuperRoyal_Match.RelativePosition_V3.X + MatchNameWidth + 1;
+	}
+}
+
+***MainInit***
+***
+declare CMlFrame Frame_ScoresTable_Visibility;
+declare CMlFrame Frame_Global;
+declare CMlQuad Quad_BlackBg;
+declare CMlFrame Frame_ButtonList;
+
+declare netread Boolean Net_Royal_ScoresTable_IsVisible for UI;
+declare netread Text Net_Royal_ScoresTable_ClipboardDisplayedMessage for Teams[0];
+declare netread Text Net_Royal_ScoresTable_ClipboardValue for Teams[0];
+declare netread Text Net_Royal_ScoresTable_HeaderMessage for Teams[0];
+declare netread Int2 Net_Royal_ScoresTable_MapsProgression for Teams[0];
+
+declare K_State State;
+declare Boolean DisplayModule;
+declare Boolean InterfaceVisible;
+declare Boolean IsDisplayed;
+declare Integer NextUpdateTime;
+declare {{{ScoresTableVisibility::P}}}K_ScoresTableIsVisible ScoresTableIsVisible;
+***
+
+***MainStart***
+***
+Frame_ScoresTable_Visibility <=> (Page.GetFirstChild("frame-scorestable-layer") as CMlFrame);
+Frame_Global <=> (Page.GetFirstChild("frame-global") as CMlFrame);
+Quad_BlackBg <=> (Frame_Global.GetFirstChild("quad-black-bg") as CMlQuad);
+State.Controls.Frame_Teams <=> (Frame_Global.GetFirstChild("frame-teams") as CMlFrame);
+State.Controls.Frame_MyTeam <=> (Frame_Global.GetFirstChild("frame-my-team") as CMlFrame);
+State.Controls.Label_Clipboard <=> (Frame_Global.GetFirstChild("label-clipboard") as CMlLabel);
+State.Controls.Label_MapName <=> (Frame_Global.GetFirstChild("label-map-name") as CMlLabel);
+State.Controls.Label_MapAuthor <=> (Frame_Global.GetFirstChild("label-map-author") as CMlLabel);
+State.Controls.Label_TeamsNb <=> (Frame_Global.GetFirstChild("label-teams-nb") as CMlLabel);
+State.Controls.Label_SuperRoyal_Match <=> (Frame_Global.GetFirstChild("label-super-royal-match") as CMlLabel);
+State.Controls.Label_SuperRoyal_Division <=> (Frame_Global.GetFirstChild("label-super-royal-division") as CMlLabel);
+State.Controls.Label_Message <=> (Frame_Global.GetFirstChild("label-message") as CMlLabel);
+State.Controls.Label_MapsProgression <=> (Frame_Global.GetFirstChild("label-maps-progression") as CMlLabel);
+State.Controls.Quad_SuperRoyal_Logo <=> (Frame_Global.GetFirstChild("quad-super-royal-logo") as CMlQuad);
+Frame_ButtonList <=> (Frame_Global.GetFirstChild("frame-button-list-scorestable-royal") as CMlFrame);
+
+DisplayModule = Frame_Global.Visible;
+InterfaceVisible = PageIsVisible;
+IsDisplayed = (PageIsVisible && DisplayModule && Frame_ScoresTable_Visibility.Visible);
+NextUpdateTime = Now;
+
+State.TargetPlayerId = NullId;
+State.TargetPlayerClan = -1;
+State = UpdateTeamsRanking(State, {{{Ranking::P}}}GetTeamsRankingUpdate(), {{{Ranking::P}}}GetTeamsRanking(), GUIPlayer);
+State = SetMap(State, Map, True);
+State = SetHeaderMessage(State, Net_Royal_ScoresTable_HeaderMessage);
+State = SetMapsProgression(State, Net_Royal_ScoresTable_MapsProgression);
+State = SetClipboardMessage(State, Net_Royal_ScoresTable_ClipboardDisplayedMessage, Net_Royal_ScoresTable_ClipboardValue);
+UpdateMyTeam(State, InputPlayer, {{{Ranking::P}}}GetTeamsRanking());
+{{{ScoresTableDefault::P}}}SetIsDisplayed(IsDisplayed);
+UpdateSuperRoyalMatch(State, {{{SuperRoyal::P}}}GetSuperRoyalEnabled(), {{{SuperRoyal::P}}}GetSuperRoyalRoundNumber(), {{{SuperRoyal::P}}}GetSuperRoyalFinale(), {{{SuperRoyal::P}}}GetSuperRoyalDivision());
+ScoresTableIsVisible = {{{ScoresTableVisibility::P}}}SetScoresTableVisibility(
+	Frame_ScoresTable_Visibility,
+	Quad_BlackBg,
+	{{{ScoresTableVisibility::P}}}LayerIsVisible(),
+	{{{ScoresTableVisibility::P}}}EnabledFromMenu()
+);
+***
+
+***MainLoop***
+***
+if (InterfaceVisible != PageIsVisible) {
+	InterfaceVisible = PageIsVisible;
+	{{{PauseMenu_Online::P}}}SetScoresTableButtonLocked(!InterfaceVisible, C_Id);
+}
+if (
+	ScoresTableIsVisible.FromLayer != {{{ScoresTableVisibility::P}}}LayerIsVisible() ||
+	ScoresTableIsVisible.FromMenu != {{{ScoresTableVisibility::P}}}EnabledFromMenu()
+) {
+	ScoresTableIsVisible = {{{ScoresTableVisibility::P}}}SetScoresTableVisibility(
+		Frame_ScoresTable_Visibility,
+		Quad_BlackBg,
+		{{{ScoresTableVisibility::P}}}LayerIsVisible(),
+		{{{ScoresTableVisibility::P}}}EnabledFromMenu()
+	);
+	if (ScoresTableIsVisible.FromMenu) {
+		{{{MenuButtonList::P}}}SetButtons(Frame_ButtonList, ["B" => _("Back")]);
+	} else {
+		{{{MenuButtonList::P}}}SetButtons(Frame_ButtonList, []);
+	}
+}
+if (IsDisplayed != (PageIsVisible && DisplayModule && Frame_ScoresTable_Visibility.Visible)) {
+	IsDisplayed = (PageIsVisible && DisplayModule && Frame_ScoresTable_Visibility.Visible);
+	{{{ScoresTableDefault::P}}}SetIsDisplayed(IsDisplayed);
+}
+if (PageIsVisible && Frame_ScoresTable_Visibility.Visible) {
+	if (DisplayModule != Net_Royal_ScoresTable_IsVisible) {
+		DisplayModule = Net_Royal_ScoresTable_IsVisible;
+		Frame_Global.Visible = Net_Royal_ScoresTable_IsVisible;
+		UpdateSuperRoyalMatch(State, {{{SuperRoyal::P}}}GetSuperRoyalEnabled(), {{{SuperRoyal::P}}}GetSuperRoyalRoundNumber(), {{{SuperRoyal::P}}}GetSuperRoyalFinale(), {{{SuperRoyal::P}}}GetSuperRoyalDivision());
+	}
+
+	if (Frame_Global.Visible) {
+		if (Now >= NextUpdateTime) {
+			NextUpdateTime = Now + C_UpdateInterval;
+
+			if (State.TeamsRankingUpdate != {{{Ranking::P}}}GetTeamsRankingUpdate()) {
+				State = UpdateTeamsRanking(State, {{{Ranking::P}}}GetTeamsRankingUpdate(), {{{Ranking::P}}}GetTeamsRanking(), GUIPlayer);
+				if (InputPlayer != Null) UpdateMyTeam(State, InputPlayer, {{{Ranking::P}}}GetTeamsRanking());
+			}
+
+			if (GUIPlayer != Null) {
+				if (State.TargetPlayerId != GUIPlayer.Id || State.TargetPlayerClan != GUIPlayer.CurrentClan) {
+					State.TargetPlayerId = GUIPlayer.Id;
+					State.TargetPlayerClan = GUIPlayer.CurrentClan;
+					State = UpdateTeamsRanking(State, {{{Ranking::P}}}GetTeamsRankingUpdate(), {{{Ranking::P}}}GetTeamsRanking(), GUIPlayer);
+					UpdateMyTeam(State, InputPlayer, {{{Ranking::P}}}GetTeamsRanking());
+				}
+			} else if (GUIPlayer == Null && State.TargetPlayerId != NullId) {
+				State.TargetPlayerId = NullId;
+				State.TargetPlayerClan = -1;
+				State = UpdateTeamsRanking(State, {{{Ranking::P}}}GetTeamsRankingUpdate(), {{{Ranking::P}}}GetTeamsRanking(), GUIPlayer);
+				UpdateMyTeam(State, InputPlayer, {{{Ranking::P}}}GetTeamsRanking());
+			}
+
+			if (
+				State.ClipboardDisplayedMessage != Net_Royal_ScoresTable_ClipboardDisplayedMessage ||
+				State.ClipboardValue != Net_Royal_ScoresTable_ClipboardValue
+			) {
+				State = SetClipboardMessage(State, Net_Royal_ScoresTable_ClipboardDisplayedMessage, Net_Royal_ScoresTable_ClipboardValue);
+			}
+
+			if (
+				Map != Null && State.CurrentMapUid != Map.MapInfo.MapUid ||
+				Map == Null && State.CurrentMapUid != ""
+			) {
+				State = SetMap(State, Map, True);
+			}
+
+			if (State.HeaderMessage != Net_Royal_ScoresTable_HeaderMessage) {
+				State = SetHeaderMessage(State, Net_Royal_ScoresTable_HeaderMessage);
+			}
+
+			if (State.MapsProgression != Net_Royal_ScoresTable_MapsProgression) {
+				State = SetMapsProgression(State, Net_Royal_ScoresTable_MapsProgression);
+			}
+		}
+
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlScriptEvent::Type::MouseClick) {
+				if (Event.ControlId == "label-clipboard") {
+					CopyToClipboard((Event.Control as CMlLabel), Net_Royal_ScoresTable_ClipboardValue);
+				}
+			} else if (Event.Type == CMlScriptEvent::Type::MenuNavigation) {
+				if (Event.MenuNavAction == CMlScriptEvent::EMenuNavAction::Cancel) {
+					{{{ScoresTableVisibility::P}}}SetEnabledFromMenu(False);
+				}
+			}
+		}
+
+		if (InputPlayer != Null && InputPlayer.SpawnStatus == CSmPlayer::ESpawnStatus::NotSpawned) {
+			foreach (Event in PendingEvents) {
+				switch (Event.Type) {
+					case CMlScriptEvent::Type::MouseOver: {
+						declare Integer TeamScore_TeamId for Event.Control = 0;
+						if (TeamScore_TeamId != 0) {
+							FocusTeam(Event.Control.Parent, State.TargetPlayerClan, TeamScore_TeamId, True);
+						}
+					}
+					case CMlScriptEvent::Type::MouseOut: {
+						declare Integer TeamScore_TeamId for Event.Control = 0;
+						if (TeamScore_TeamId != 0) {
+							FocusTeam(Event.Control.Parent, State.TargetPlayerClan, TeamScore_TeamId, False);
+						}
+					}
+					case CMlScriptEvent::Type::MouseClick: {
+						if (Event.ControlId == "button-spec-team") {
+							declare Integer TeamScore_TeamId for Event.Control = 0;
+							if (TeamScore_TeamId != 0) {
+								{{{Spectator::P}}}SpectateNextClanPlayer(TeamScore_TeamId);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+if ({{{Task::P}}}IsInitialized(State.TaskRetrieveDisplayName)) {
+	State.TaskRetrieveDisplayName = {{{Task::P}}}Update(State.TaskRetrieveDisplayName);
+	if (!{{{Task::P}}}IsRunning(State.TaskRetrieveDisplayName)) {
+		State.TaskRetrieveDisplayName = {{{Task::P}}}Destroy(State.TaskRetrieveDisplayName);
+		State = SetMap(State, Map, False);
+	}
+}
+***
+""",
+[
+	Task::Component(),
+	Tools::Component(),
+	MV_Utils::Component(),
+	Clans::Component(),
+	UIModules::Component(),
+	ScoresTableDefault::Component(),
+	UserStore::Component(),
+	Spectator::Component(),
+	SuperRoyal::Component(),
+	Ranking::Component(),
+	ScoresTableVisibility::Component(),
+	MenuButtonList::Component(),
+	PauseMenu_Online::Component()
+],
+[]
+	);
+}
