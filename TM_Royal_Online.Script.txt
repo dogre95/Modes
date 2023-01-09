@@ -4,7 +4,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2022-10-17"
+#Const Version						"2023-01-03"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -179,6 +179,7 @@ ClientManiaAppUrl = C_ManiaAppUrl;
 UIModules_PauseMenu_Online::SetHelp(Description);
 UIModules_Checkpoint::SetVisibleFor(UIModules_Checkpoint::C_Target_None);
 UIModules_SpectatorBase::HidePlayerName(True);
+UIModules_Sign16x9Small::SetDisplayMode(UIModules_Sign16x9Small::C_DisplayMode_Royal);
 UpdateScoresTableHeader(S_TimeLimit, 1, C_NumberOfRoundsToPlay);
 Race::EnableJoinLeaveNotification(False);
 Race::EnableAutomaticGiveUpAfterElimination(C_EnableAutomaticGiveUpAfterElimination);
@@ -255,6 +256,11 @@ Royal::Yield();
 Clans::SetClansNb(Clans::C_MultiClansMax);
 Clans::SetClanStyle(C_ClanStyle);
 Clans::EnableClanSkins(True);
+for (Clan, 1, Clans::C_MultiClansMax) {
+	declare Vec3 ClanColor = Clans::GetClanColor(Clan);
+	Teams[Clan - 1].ColorPrimary = ClanColor;
+	Teams[Clan - 1].ColorUI = ClanColor;
+}
 ***
 
 ***Match_LoadItems***
@@ -978,6 +984,7 @@ MB_Sleep(WinScreen_Common::C_WinScreenDuration + 500);
 
 UIManager.UIAll.UISequence_PodiumPlayersWin = "";
 declare Integer WinningTeamId = Scores::GetClanWinner();
+UIModules_Sign16x9Small::SetWinningClan(WinningTeamId);
 if (WinningTeamId != Royal::C_TeamNullId) {
 	declare Integer[CSmScore] PodiumScores;
 	foreach (Score in Scores) {
