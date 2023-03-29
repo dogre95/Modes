@@ -1,7 +1,7 @@
 /** 
  *	Royal mode helper library
  */
-#Const Version		"2022-10-17"
+#Const Version		"2023-03-09"
 #Const ScriptName	"Libs/Nadeo/TMNext/TrackMania/Modes/Royal/Royal.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -35,6 +35,7 @@
 	Integer Id;
 	K_Member[Text] Members;
 	Integer[] SegmentTimes;
+	Integer[] SegmentMinSpawnTimes;
 	Boolean Eliminated;
 	Integer Rank;
 	Integer PreviousMapRank;
@@ -110,6 +111,7 @@ K_Team[Integer] Private_CreateTeamIfNew(K_Team[Integer] _Teams, Integer _TeamId,
 		Id = _TeamId,
 		Members = [],
 		SegmentTimes = [],
+		SegmentMinSpawnTimes = [0],
 		Eliminated = _Eliminated,
 		Rank = C_NotRanked,
 		PreviousMapRank = C_NotRanked,
@@ -334,7 +336,12 @@ Void Start(CSmPlayer _Player, Integer _SpawnTime) {
 	DisplayEliminationWarning(_Player, Team.Rank);
 	LinkPlayerToTeamMember(Team.Id, _Player.User.WebServicesUserId, _Player);
 	Scores::XmlRpc_OverrideScoreTeamNum(_Player.Score, Team.Id);
-	Race::StartInClan(_Player, G_Starts[StartIndex], Team.Id, _SpawnTime);
+	// Prevent players from respawning before their mate that unlocked the latest segment
+	declare Integer SpawnTime = _SpawnTime;
+	if (CurrentSegment < Team.SegmentMinSpawnTimes.count) {
+		SpawnTime = ML::Max(SpawnTime, Team.SegmentMinSpawnTimes[CurrentSegment]);
+	}
+	Race::StartInClan(_Player, G_Starts[StartIndex], Team.Id, SpawnTime);
 	UIModules_SegmentProgression::SetCanJoinTeam(_Player, CurrentSegment < Team.SegmentTimes.count);
 	UIModules_SegmentProgression::SetPlayerProgression(_Player, StartIndex + 1);
 	if (_Player.Score != Null) {
@@ -387,6 +394,7 @@ Void CompleteSegment(CSmPlayer _Player, Integer _RaceTime, Boolean _BonusTimeIsA
 	if (CurrentSegment > Team.SegmentTimes.count) {
 		declare Integer SegmentTime = _Player.StartTime + _RaceTime - G_MapStartTime;
 		Team.SegmentTimes.add(SegmentTime);
+		Team.SegmentMinSpawnTimes.add(Now + C_OutroWithoutScoresTableDuration + Race::C_SpawnDuration);
 		
 		if (Const::C_StayAtBlackSegment) {
 			declare Integer LoopNb = ML::Max(0, Team.SegmentTimes.count - G_Starts.count + 1);
@@ -925,6 +933,7 @@ Void ResetRaces() {
 		declare K_Team UpdatedTeam = Team;
 		UpdatedTeam.Rank = C_NotRanked;
 		UpdatedTeam.SegmentTimes = [];
+		UpdatedTeam.SegmentMinSpawnTimes = [0];
 		UpdatedTeam.TimeDiff = 0;
 		UpdatedTeam.BonusTime = 0;
 		UpdatedTeam.BonusTimeEndTime = -1;
@@ -1060,9 +1069,11 @@ Void PlayFakeRace() {
 	foreach (TeamId => Team in G_Teams) {
 		declare K_Team UpdatedTeam = Team;
 		UpdatedTeam.SegmentTimes = [];
+		UpdatedTeam.SegmentMinSpawnTimes = [0];
 		UpdatedTeam.TimeDiff = 0;
 		for (I, 0, ML::Rand(-1, 2)) {
 			UpdatedTeam.SegmentTimes.add(ML::Rand(I * 10000, (I * 10000) + 9999));
+			UpdatedTeam.SegmentMinSpawnTimes.add(0);
 		}
 		G_Teams[TeamId] = UpdatedTeam;
 	}

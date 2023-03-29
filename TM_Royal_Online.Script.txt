@@ -4,7 +4,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2023-01-03"
+#Const Version						"2023-03-15"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -101,7 +101,7 @@
 // `C_GhostDriverCustomDataVersion` must be changed every time there is a gameplay change in the mode
 // Otherwise the events saved in the ghosts won't match the new rules and they won't be replayed properly
 #Const C_GhostDriverModeName "Royal" //< Can be anything on UAT, only "TimeAttack" or "Royal" on Production
-#Const C_GhostDriverCustomDataVersion 2
+#Const C_GhostDriverCustomDataVersion 3
 
 #Const C_UploadRecord False
 #Const C_DisplayRecordGhost False
@@ -177,6 +177,7 @@ if (C_HudModulePath != "") Hud_Load(C_HudModulePath);
 ***
 ClientManiaAppUrl = C_ManiaAppUrl;
 UIModules_PauseMenu_Online::SetHelp(Description);
+UIModules_PauseMenu_Online::SetInviteFriendsButtonHiddenAndLocked(True);
 UIModules_Checkpoint::SetVisibleFor(UIModules_Checkpoint::C_Target_None);
 UIModules_SpectatorBase::HidePlayerName(True);
 UIModules_Sign16x9Small::SetDisplayMode(UIModules_Sign16x9Small::C_DisplayMode_Royal);
@@ -646,7 +647,8 @@ if (Task::IsInitialized(Map_DownloadGhostsTask)) {
 			Log::Log("""[Royal][Bots] Ghosts not associated to a player > TeamsGhosts : {{{TeamsGhosts}}}""");
 		}
 	}
-	Log::Log("""[Royal][Bots] Result of the download task > Timeout : {{{Map_GhostsTaskTimeout}}} | IsInitialized : {{{Map_DownloadGhostsTask.IsInitialized}}} | IsProcessing : {{{Map_DownloadGhostsTask.IsProcessing}}} | IsSuccess : {{{Map_DownloadGhostsTask.IsSuccess}}} | Error type : {{{Map_DownloadGhostsTask.Error.Type}}} | Error code : {{{Map_DownloadGhostsTask.Error.Code}}} | Error description : {{{Map_DownloadGhostsTask.Error.Description}}} | Map_DownloadedGhostIds : {{{Map_DownloadedGhostIds}}}""");
+	declare Task::K_SourceTaskError SourceTaskError = Task::GetSourceTaskError(Map_DownloadGhostsTask);
+	Log::Log("""[Royal][Bots] Result of the download task > Timeout : {{{Map_GhostsTaskTimeout}}} | IsInitialized : {{{Map_DownloadGhostsTask.IsInitialized}}} | IsProcessing : {{{Map_DownloadGhostsTask.IsProcessing}}} | IsSuccess : {{{Map_DownloadGhostsTask.IsSuccess}}} | Error type : {{{SourceTaskError.Type}}} | Error code : {{{SourceTaskError.Code}}} | Error description : {{{SourceTaskError.Description}}} | Map_DownloadedGhostIds : {{{Map_DownloadedGhostIds}}}""");
 	Map_DownloadGhostsTask = Task::Destroy(Map_DownloadGhostsTask);
 	Map_GhostsTaskTimeout = -1;
 }
@@ -1061,7 +1063,8 @@ while (Map_UploadGhostsTask.count > 0) {
 	MB_Yield();
 	declare Task::K_Task Task = Task::Update(Map_UploadGhostsTask[0]);
 	if (!Task::IsRunning(Task) || Now >= Map_GhostsTaskTimeout) {
-		Log::Log("""[Royal][Bots] Ghosts upload task result > IsTimeout : {{{Now >= Map_GhostsTaskTimeout}}} | IsInitialized : {{{Task.IsInitialized}}} | IsProcessing : {{{Task.IsProcessing}}} | IsSuccess : {{{Task.IsSuccess}}} | Error type : {{{Task.Error.Type}}} | Error code : {{{Task.Error.Code}}} | Error description : {{{Task.Error.Description}}}""");
+		declare Task::K_SourceTaskError SourceTaskError = Task::GetSourceTaskError(Task);
+		Log::Log("""[Royal][Bots] Ghosts upload task result > IsTimeout : {{{Now >= Map_GhostsTaskTimeout}}} | IsInitialized : {{{Task.IsInitialized}}} | IsProcessing : {{{Task.IsProcessing}}} | IsSuccess : {{{Task.IsSuccess}}} | Error type : {{{SourceTaskError.Type}}} | Error code : {{{SourceTaskError.Code}}} | Error description : {{{SourceTaskError.Description}}}""");
 		Task::Destroy(Task);
 		Map_UploadGhostsTask.removekey(0);
 	} else {
