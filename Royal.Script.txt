@@ -1,7 +1,7 @@
 /** 
  *	Royal mode helper library
  */
-#Const Version		"2023-03-09"
+#Const Version		"2023-04-13"
 #Const ScriptName	"Libs/Nadeo/TMNext/TrackMania/Modes/Royal/Royal.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -1081,10 +1081,10 @@ Void PlayFakeRace() {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 /// Send the team match result to the tracking
-Void SendTeamMatchResult(K_Team _Team, Boolean _IsWinner) {
+Void SendTeamMatchResult(K_Team _Team, Boolean _IsWinner, Boolean _IsSuperRoyalFinale, Text _SuperRoyalDivision) {
 	foreach (Member in _Team.Members) {
 		if (AllPlayers.existskey(Member.PlayerId)) {
-			Tracking::SendPlayerMatchResult(UIManager, AllPlayers[Member.PlayerId], _Team.Rank, _IsWinner);
+			Tracking::SendPlayerMatchResult(UIManager, AllPlayers[Member.PlayerId], _Team.Rank, _IsWinner, _IsSuperRoyalFinale, _SuperRoyalDivision);
 		}
 	}
 }

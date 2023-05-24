@@ -4,7 +4,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2023-03-15"
+#Const Version						"2023-04-13"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -933,7 +933,7 @@ if (Match_MapIsValid) {
 		EliminatedTeamsRanks[Team.Id] = Team.Rank;
 		EliminatedTeamIds.add(Team.Id);
 		UIModules_MatchResult::SetTeamRank(Team.Id, Team.Rank);
-		Royal::SendTeamMatchResult(Team, False);
+		Royal::SendTeamMatchResult(Team, False, S_IsSuperRoyalFinale, S_Division);
 	}
 	Matchmaking::SendEliminatedTeams(EliminatedTeamIds);
 	declare Integer AnimationDuration = UIModules_RoundEliminations::SendEliminatedTeams(EliminatedTeamsRanks);
@@ -951,7 +951,7 @@ if (Match_MapIsValid) {
 		foreach (TeamId => Team in AllTeams) {
 			if (!Team.Eliminated) {
 				Scores::SetClanWinner(TeamId);
-				Royal::SendTeamMatchResult(Team, True);
+				Royal::SendTeamMatchResult(Team, True, S_IsSuperRoyalFinale, S_Division);
 				break;
 			}
 		}
