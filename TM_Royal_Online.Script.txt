@@ -4,7 +4,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2023-04-13"
+#Const Version						"2023-06-09"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -43,6 +43,7 @@
 #Setting S_MatchWaitingScreenDuration 20 as _("Match waiting screen duration") //< Maximum time spent waiting for players at the beginning of the match
 #Setting S_RoundWaitingScreenDuration 20 as _("Round waiting screen duration") //< Maximum time spent waiting for players at the beginning of each round
 #Setting S_ChatTime 120 //< Wait more time before launching the next match
+#Setting S_EnableJoinLeaveNotifications False
 #Setting S_IsMatchmaking True as "<hidden>" //< Enable matchmaking features
 #Setting S_MatchId "" as "<hidden>" //< Id of the matchmaking match
 #Setting S_AddBotsUntil 20 as "<hidden>" //< Add bots to the match until there is the required number of teams
@@ -182,7 +183,6 @@ UIModules_Checkpoint::SetVisibleFor(UIModules_Checkpoint::C_Target_None);
 UIModules_SpectatorBase::HidePlayerName(True);
 UIModules_Sign16x9Small::SetDisplayMode(UIModules_Sign16x9Small::C_DisplayMode_Royal);
 UpdateScoresTableHeader(S_TimeLimit, 1, C_NumberOfRoundsToPlay);
-Race::EnableJoinLeaveNotification(False);
 Race::EnableAutomaticGiveUpAfterElimination(C_EnableAutomaticGiveUpAfterElimination);
 Race::SortScores(Race::C_Sort_TotalPoints);
 UIManager.HoldLoadingScreen = True;
