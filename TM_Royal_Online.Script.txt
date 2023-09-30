@@ -1,10 +1,10 @@
 /**
  *	Royal mode
  */
-#Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextBase.Script.txt"
+#Extends "Modes/Nadeo/Trackmania/Base/TrackmaniaBase.Script.txt"
 
 #Const CompatibleMapTypes	"TrackMania\\TM_Royal,TM_Royal"
-#Const Version						"2023-06-09"
+#Const Version						"1.0.0+2023-06-09"
 #Const ScriptName					"Modes/TrackMania/TM_Royal_Online.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -12,27 +12,27 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 #Include "TextLib" as TL
 #Include "MathLib" as ML
-#Include "Libs/Nadeo/CommonLibs/Common/Task.Script.txt" as Task
-#Include "Libs/Nadeo/ModeLibs/Common/Matchmaking.Script.txt" as Matchmaking
-#Include "Libs/Nadeo/ModeLibs/Common/Bot.Script.txt" as Bot
-#Include "Libs/Nadeo/TMNext/TrackMania/Modes/Royal/Royal.Script.txt" as Royal
-#Include "Libs/Nadeo/TMNext/TrackMania/Modes/Royal/StateManager.Script.txt" as StateMgr
-#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/PauseMenuOnline_Server.Script.txt" as UIModules_PauseMenu_Online
-#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/Checkpoint_Server.Script.txt" as UIModules_Checkpoint
-#Include "ManiaApps/Nadeo/TMxSM/Race/UIModules/SpectatorBase_Server.Script.txt" as UIModules_SpectatorBase
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/RoundEliminations_Server.Script.txt" as UIModules_RoundEliminations
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/RoundBestTeams_Server.Script.txt" as UIModules_RoundBestTeams
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/ScoresTable_Server.Script.txt" as UIModules_ScoresTable_Royal
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/TeamScore_Server.Script.txt" as UIModules_TeamScore
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/WaitingScreen_Server.Script.txt" as UIModules_WaitingScreen
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/PreLoadingScreen_Common.Script.txt" as PreLoadingScreen_Common
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/MatchResult_Server.Script.txt" as UIModules_MatchResult
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/SegmentProgression_Server.Script.txt" as UIModules_SegmentProgression
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/LiveRanking_Server.Script.txt" as UIModules_LiveRanking
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/WinScreen_Common.Script.txt" as WinScreen_Common
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/Transition_Server.Script.txt" as UIModules_Transition
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/UIModules/CanChat_Server.Script.txt" as UIModules_CanChat
-#Include "ManiaApps/Nadeo/TMNext/TrackMania/Royal/SuperRoyal_Server.Script.txt" as UIModules_NetShare_Royal
+#Include "Libs/Nadeo/CMGame/Utils/Task.Script.txt" as Task
+#Include "Libs/Nadeo/Trackmania/Modes/Matchmaking.Script.txt" as Matchmaking
+#Include "Libs/Nadeo/CMGame/Modes/Bot.Script.txt" as Bot
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/Royal.Script.txt" as Royal
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/StateManager.Script.txt" as StateMgr
+#Include "Libs/Nadeo/TMGame/Modes/Base/UIModules/PauseMenuOnline_Server.Script.txt" as UIModules_PauseMenu_Online
+#Include "Libs/Nadeo/TMGame/Modes/Base/UIModules/Checkpoint_Server.Script.txt" as UIModules_Checkpoint
+#Include "Libs/Nadeo/TMGame/Modes/Base/UIModules/SpectatorBase_Server.Script.txt" as UIModules_SpectatorBase
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/RoundEliminations_Server.Script.txt" as UIModules_RoundEliminations
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/RoundBestTeams_Server.Script.txt" as UIModules_RoundBestTeams
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/ScoresTable_Server.Script.txt" as UIModules_ScoresTable_Royal
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/TeamScore_Server.Script.txt" as UIModules_TeamScore
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/WaitingScreen_Server.Script.txt" as UIModules_WaitingScreen
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/PreLoadingScreen_Common.Script.txt" as PreLoadingScreen_Common
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/MatchResult_Server.Script.txt" as UIModules_MatchResult
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/SegmentProgression_Server.Script.txt" as UIModules_SegmentProgression
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/LiveRanking_Server.Script.txt" as UIModules_LiveRanking
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/WinScreen_Common.Script.txt" as WinScreen_Common
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/Transition_Server.Script.txt" as UIModules_Transition
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/UIModules/CanChat_Server.Script.txt" as UIModules_CanChat
+#Include "Libs/Nadeo/Trackmania/Modes/Royal/SuperRoyal_Server.Script.txt" as UIModules_NetShare_Royal
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Settings
@@ -79,7 +79,7 @@
 #Const Description _("""Several teams compete for the win. The game is played in several rounds. Each round, the first teams to finish the race are qualified for the next round while the last ones are eliminated. After some rounds, only a few teams will remain. The team that wins the last race wins the match.""")
 
 #Const C_HudModulePath "" //< Path to the hud module
-#Const C_ManiaAppUrl "file://Media/ManiaApps/Nadeo/TMNext/TrackMania/Royal/Royal.Script.txt" //< Url of the mania app
+#Const C_ManiaAppUrl "file://Media/ManiaApps/Nadeo/Trackmania/Modes/Royal.Script.txt" //< Url of the mania app
 #Const C_NumberOfRoundsToPlay 5
 #Const Clans::C_ClanStyle_Animals as C_ClanStyle //< Use the animals clan style
 #Const C_MatchGetReadyDuration 3000 //< Warn the player that the match is starting
@@ -89,7 +89,7 @@
 #Const C_UploadGhostsTaskTimeout 60000
 #Const C_SpawnDelayAfterWaitingScreen 1500
 #Const C_DisableSkipOutro True //< Prevent the players from pressing respawn/give up to cut the finish outro and respawn faster
-#Const C_ImageUrl_CheckpointImage "file://Media/Manialinks/Nadeo/TMNext/Modes/Royal"
+#Const C_ImageUrl_CheckpointImage "file://Media/Manialinks/Nadeo/Trackmania/Modes/Royal"
 #Const C_EnableAutomaticGiveUpAfterElimination True
 
 // Array of account id to add into fake teams
